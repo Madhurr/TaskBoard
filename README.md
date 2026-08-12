@@ -35,18 +35,6 @@ suite drives, so what you can reproduce by hand is exactly what the tests assert
 
 ---
 
-## Screenshots
-
-| Board | List | Editor |
-|---|---|---|
-| ![Board](Screenshots/board-dark.png) | ![List](Screenshots/list.png) | ![Editor](Screenshots/editor.png) |
-
-| Empty state | Offline | Undo |
-|---|---|---|
-| ![Empty state](Screenshots/empty-state.png) | ![Offline](Screenshots/offline.png) | ![Undo](Screenshots/undo.png) |
-
----
-
 ## How it is put together
 
 ```
