@@ -175,7 +175,7 @@ struct MoveTests {
 
     @Test("Moving within a column excludes the task from its own destination gap")
     func withinColumn() throws {
-        // Dragging "a" to the end of To Do must land after "c", not after itself.
+        // Must land after "c", not after itself.
         let moved = try #require(
             BoardLogic.move(taskID: "a", to: .todo, targetIndex: 2, in: board, now: epoch)
         )
@@ -283,9 +283,8 @@ struct ResolveTests {
         #expect(BoardLogic.resolve(local: a, remote: b) == BoardLogic.resolve(local: b, remote: a))
     }
 
-    /// Regression: the tiebreak once compared `id`, which is equal by construction
-    /// here, so it silently degenerated into "always keep local" and two devices
-    /// would each hold their own version indefinitely.
+    /// Regression: the tiebreak compared `id`, which is equal by construction here,
+    /// so it degenerated into "always keep local" and never converged.
     @Test("Symmetry holds across every field that can still differ at a tie", arguments: [
         ("title", task("t", position: 0, updated: 10, title: "Z")),
         ("details", task("t", position: 0, updated: 10, details: "notes")),

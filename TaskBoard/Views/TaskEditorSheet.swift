@@ -1,9 +1,7 @@
 import SwiftUI
 
-/// Create or edit a task.
-///
-/// Status is editable here as well as by dragging, because on a phone the drag is
-/// the fiddlier of the two and list mode has no cross-section gesture at all.
+/// Create or edit a task. Status is editable here as well as by dragging, since
+/// list mode has no cross-section gesture.
 struct TaskEditorSheet: View {
 
     enum Mode: Equatable {
@@ -133,8 +131,7 @@ struct TaskEditorSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .onAppear {
-            // Only for a new task: opening the keyboard on an existing one hides
-            // the content the user came to read.
+            // New tasks only — on an existing one the keyboard hides the content.
             if case .create = mode { isTitleFocused = true }
         }
     }
@@ -186,8 +183,7 @@ struct TaskEditorSheet: View {
         }
     }
 
-    /// States plainly whether this task has reached the server — the question the
-    /// board's badges can only gesture at.
+    /// Says plainly whether this task has reached the server.
     private func metadata(for task: BoardTask) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Divider().overlay(Theme.hairline).padding(.bottom, 11)

@@ -1,10 +1,7 @@
 import SwiftUI
 
-/// Visual constants for the board.
-///
-/// Colours are defined as light/dark pairs resolved through `UITraitCollection`
-/// rather than as asset-catalog entries, so the whole palette is readable — and
-/// reviewable — in one file.
+/// Visual constants. Colours are light/dark pairs resolved through the trait
+/// collection, so the palette lives in one file rather than the asset catalog.
 enum Theme {
 
     // MARK: - Palette
@@ -41,13 +38,11 @@ enum Theme {
         static let xl: CGFloat = 24
     }
 
-    /// Width of a board column on a compact screen.
     static let columnWidth: CGFloat = 300
 
     // MARK: - Motion
 
-    /// One spring for everything that moves, so drags, drops, and mode changes
-    /// share a single sense of weight.
+    /// One spring for everything, so all motion shares a sense of weight.
     static let motion = Animation.spring(response: 0.34, dampingFraction: 0.78)
     static let quickMotion = Animation.spring(response: 0.22, dampingFraction: 0.85)
 
@@ -76,10 +71,8 @@ private extension UIColor {
 extension View {
     /// The standard raised surface used by cards and sheets.
     ///
-    /// An `accent` draws the leading status stripe. It is composed *inside* the
-    /// clipped surface rather than layered behind the card: a square-cornered
-    /// rectangle sitting behind a rounded rectangle overhangs wherever the corner
-    /// curves away, which reads as the colour leaking out of the card.
+    /// `accent` draws the leading status stripe. It goes inside the clipped
+    /// surface — layered behind the card it would overhang the rounded corners.
     func cardSurface(
         cornerRadius: CGFloat = Theme.Radius.card,
         accent: Color? = nil,

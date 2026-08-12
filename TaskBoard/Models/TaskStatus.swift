@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The three columns of the board. Raw values are the wire format stored in
-/// Realtime Database — never rename them without a migration.
+/// The three columns of the board. Raw values are the wire format; renaming one
+/// is a migration.
 enum TaskStatus: String, Codable, CaseIterable, Identifiable, Sendable {
     case todo
     case inProgress
@@ -25,7 +25,7 @@ enum TaskStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Column accent, carried onto each card's leading stripe.
+    /// Column accent, also used for each card's leading stripe.
     var accent: Color {
         switch self {
         case .todo: Color(red: 0.42, green: 0.55, blue: 0.98)
@@ -34,6 +34,5 @@ enum TaskStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Display order, left to right.
     static let ordered: [TaskStatus] = [.todo, .inProgress, .done]
 }

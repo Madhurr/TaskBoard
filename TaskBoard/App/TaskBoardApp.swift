@@ -6,13 +6,8 @@ struct TaskBoardApp: App {
     @State private var environment: AppEnvironment
 
     init() {
-        // Firebase has to be configured — and persistence switched on — before any
-        // DatabaseReference exists, which rules out doing this from a view's .task.
-        //
-        // The unit tests are hosted by this app, so its initialiser runs before they
-        // do. Booting Firebase there would point the suite at a live database and
-        // make it depend on the network; the tests cover the repository through its
-        // protocol instead, which is the whole reason that protocol exists.
+        // The unit tests are hosted by this app, so this runs before they do —
+        // booting Firebase would point the suite at a live database.
         _environment = State(initialValue: Self.isRunningTests ? .simulated() : .live())
     }
 
@@ -45,7 +40,6 @@ struct TaskBoardApp: App {
 }
 
 extension BoardTask {
-    /// Sample content for previews and the developer sheet.
     static var samples: [BoardTask] {
         let now = Date()
         func task(_ title: String, _ details: String, _ status: TaskStatus, _ position: Double, _ age: TimeInterval) -> BoardTask {

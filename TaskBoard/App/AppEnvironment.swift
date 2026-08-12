@@ -2,14 +2,13 @@ import FirebaseCore
 import FirebaseDatabase
 import Foundation
 
-/// Composition root. Builds the object graph once, at launch, so nothing below it
-/// has to know which backend it is talking to.
+/// Composition root. Builds the object graph once, so nothing below it knows which
+/// backend it has.
 @MainActor
 final class AppEnvironment {
 
     let board: BoardViewModel
-    /// Present only when running against the in-memory backend, which is what the
-    /// developer sheet drives.
+    /// Set only on the in-memory backend, which the developer sheet drives.
     let simulator: InMemoryTaskRepository?
 
     private init(repository: any TaskRepository, simulator: InMemoryTaskRepository?) {
@@ -17,12 +16,9 @@ final class AppEnvironment {
         self.simulator = simulator
     }
 
-    /// The real app: Firebase, with its local cache doing the persistence.
-    ///
-    /// In debug builds this defers to the simulated backend when the developer
-    /// sheet has asked for it. Choosing the backend at launch rather than swapping
-    /// it live keeps the decision in one place — a running board cannot end up half
-    /// attached to each.
+    /// Firebase, with its local cache doing the persistence. Debug builds can
+    /// divert to the simulated backend; the choice is made at launch so a running
+    /// board is never half-attached to both.
     static func live() -> AppEnvironment {
         #if DEBUG
         if DebugSettings.useSimulatedBackend {
@@ -37,8 +33,7 @@ final class AppEnvironment {
         )
     }
 
-    /// Everything in memory, with the network knobs exposed. Used by previews and
-    /// by the developer sheet's "use in-memory backend" switch.
+    /// Everything in memory, with the network knobs exposed.
     static func simulated(
         tasks: [BoardTask] = [],
         conditions: InMemoryTaskRepository.Conditions = .perfect
@@ -48,14 +43,10 @@ final class AppEnvironment {
     }
 }
 
-/// Firebase setup, kept in one place because the ordering is load-bearing.
 enum FirebaseBootstrap {
 
-    /// Configures Firebase and returns the database handle.
-    ///
-    /// `isPersistenceEnabled` has to be set before *any* `DatabaseReference` is
-    /// created — set it afterwards and the SDK throws at runtime. That is the whole
-    /// reason this runs from `App.init()` rather than from a view's `.task`.
+    /// `isPersistenceEnabled` must be set before any `DatabaseReference` exists, or
+    /// the SDK throws at runtime — hence calling this from `App.init()`.
     static func configure() -> Database {
         FirebaseApp.configure()
 
@@ -70,12 +61,8 @@ enum FirebaseBootstrap {
 enum DebugSettings {
     private static let key = "debug.useSimulatedBackend"
 
-    /// Run against `InMemoryTaskRepository` instead of Firebase, so the network and
-    /// failure knobs in the developer sheet have something to act on.
-    ///
-    /// Also settable from the command line — `-debug.useSimulatedBackend YES` in the
-    /// scheme's arguments — which is how a reviewer can reach the simulated backend
-    /// without first launching into the real one.
+    /// Run against `InMemoryTaskRepository` instead of Firebase. Also settable via
+    /// `-debug.useSimulatedBackend YES` in the scheme's arguments.
     static var useSimulatedBackend: Bool {
         get { UserDefaults.standard.bool(forKey: key) }
         set { UserDefaults.standard.set(newValue, forKey: key) }

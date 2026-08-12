@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The three columns, side by side and horizontally paged.
+/// The three columns, horizontally paged.
 struct BoardColumnsView: View {
     let columns: [(status: TaskStatus, tasks: [BoardTask])]
     let syncState: (BoardTask) -> SyncState
@@ -73,7 +73,7 @@ struct BoardColumnView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            // A generous tail so the column stays a drop target below its last card.
+            // Tail so the column stays a drop target below its last card.
             .padding(.bottom, 60)
         }
         .padding(Theme.Spacing.m)
@@ -149,12 +149,9 @@ struct BoardColumnView: View {
             }
     }
 
-    /// Where the dragged card should land, from the drop point.
-    ///
-    /// Measured against the recorded midpoints of the *other* cards — the dragged
-    /// task is excluded because `BoardLogic.move` expects an index into the column
-    /// without it, which is also the only reading that makes "drop below yourself"
-    /// mean anything.
+    /// Insertion index from a drop point, measured against the recorded midpoints
+    /// of the other cards. The dragged task is excluded: `BoardLogic.move` expects
+    /// an index into the column without it.
     private func insertionIndex(for draggedID: BoardTask.ID, at location: CGPoint) -> Int {
         tasks
             .filter { $0.id != draggedID }

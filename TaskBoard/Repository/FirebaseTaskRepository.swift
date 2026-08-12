@@ -3,21 +3,14 @@ import Foundation
 
 /// Realtime Database backed `TaskRepository`.
 ///
-/// The design leans on one property of the Firebase SDK: with persistence enabled,
-/// the local cache is a real database. Reads are served from it immediately at
-/// launch, writes are applied to it synchronously and queued durably, and the queue
-/// survives being killed in the app switcher. That is what makes this app usable
-/// offline without a second store to keep in step.
-///
-/// What Firebase does *not* provide is any view of that queue, so `PendingWriteTracker`
-/// mirrors it for the UI. Everything that actually delivers a write is still Firebase's.
+/// With persistence enabled the local cache is the store: reads come from it at
+/// launch, writes are applied synchronously and queued durably across launches.
+/// `PendingWriteTracker` mirrors that queue for the UI, which Firebase doesn't expose.
 actor FirebaseTaskRepository: TaskRepository {
 
-    /// Firebase's references are documented as thread-safe and its callbacks arrive
-    /// on its own queue, so these are reachable from the `nonisolated` methods that
-    /// register observers and enqueue writes. That indirection is not decoration:
-    /// a closure formed inside actor-isolated code captures that isolation, which
-    /// Swift 6 rejects when handing it to a callback-based API like this one.
+    // Firebase references are thread-safe. They're reachable from the nonisolated
+    // methods below, which exist because a closure formed in actor-isolated code
+    // captures that isolation and can't be handed to a callback-based API.
     private nonisolated(unsafe) let tasksRef: DatabaseReference
     private nonisolated(unsafe) let connectedRef: DatabaseReference
 
@@ -30,8 +23,8 @@ actor FirebaseTaskRepository: TaskRepository {
     private var lastError: SyncIssue?
 
     private var hasStarted = false
-    /// Set once a value event has arrived while connected, which is the point at
-    /// which Firebase has replayed anything it had queued from a previous launch.
+    /// True once a value event has arrived while connected — by then Firebase has
+    /// replayed anything queued from a previous launch.
     private var hasRoundTrippedWhileConnected = false
 
     private var continuations: [UUID: AsyncStream<RepositorySnapshot>.Continuation] = [:]
@@ -65,11 +58,9 @@ actor FirebaseTaskRepository: TaskRepository {
 
     /// Writes locally and hands the change to Firebase's queue.
     ///
-    /// Deliberately does not await the server. `updateChildValues` applies to the
-    /// local cache immediately and its completion handler fires only on
-    /// acknowledgement — which, offline, is never. Awaiting it would hang every
-    /// edit made without a connection, so the acknowledgement is handled out of
-    /// band and shows up as a change in `pendingIDs`.
+    /// Does not await the server: the completion handler fires only on
+    /// acknowledgement, which offline never comes. It's handled out of band and
+    /// surfaces as a change in `pendingIDs`.
     func save(_ incoming: [BoardTask]) async throws {
         guard !incoming.isEmpty else { return }
 
@@ -90,13 +81,11 @@ actor FirebaseTaskRepository: TaskRepository {
     // MARK: - Firebase plumbing (nonisolated)
 
     private nonisolated func attachObservers() {
-        // Keeps the node warm in the local cache so a cold launch has data to show
-        // before — or entirely without — reaching the network.
+        // Keeps the node cached so a cold launch has data without the network.
         tasksRef.keepSynced(true)
 
         let tasksHandle = tasksRef.observe(.value) { @Sendable [weak self] snapshot in
-            // Decoded here, on Firebase's callback queue, so only Sendable values
-            // cross into the actor.
+            // Decode here so only Sendable values cross into the actor.
             let decoded = BoardTask.decodeAll(from: snapshot.value)
             Task { await self?.applyRemote(decoded) }
         } withCancel: { @Sendable [weak self] error in
@@ -112,10 +101,7 @@ actor FirebaseTaskRepository: TaskRepository {
         observers.add(connectedRef, connectedHandle)
     }
 
-    /// Builds the wire payload and hands it to Firebase.
-    ///
-    /// A single multi-path update, so a reorder that touches several tasks cannot
-    /// land half-applied.
+    /// One multi-path update, so a reorder touching several tasks can't half-apply.
     private nonisolated func enqueue(_ tasks: [BoardTask]) {
         var payload: [String: Any] = [:]
         for task in tasks {
@@ -136,8 +122,6 @@ actor FirebaseTaskRepository: TaskRepository {
 
         if isConnected, !hasRoundTrippedWhileConnected {
             hasRoundTrippedWhileConnected = true
-            // Firebase has replayed anything queued before this launch, so markers
-            // restored from disk are no longer meaningful.
             await tracker.clearRestored()
             pendingIDs = await tracker.current
         }
@@ -154,8 +138,7 @@ actor FirebaseTaskRepository: TaskRepository {
 
     private func completeWrite(ids: [BoardTask.ID], issue: SyncIssue?) async {
         if let issue {
-            // The write stays marked pending: it failed, the local copy is still
-            // there, and saying so is more useful than quietly dropping the marker.
+            // Stays pending: the local copy is still there and the failure is worth showing.
             lastError = issue
         } else {
             pendingIDs.subtract(ids)
@@ -217,12 +200,8 @@ actor FirebaseTaskRepository: TaskRepository {
     }
 }
 
-/// Holds Firebase observer registrations so they can be removed when the repository
-/// goes away.
-///
-/// An actor cannot reach its own isolated state from `deinit` under Swift 6, so the
-/// registrations live here and this object's own `deinit` — which runs without
-/// isolation — does the teardown.
+/// Holds observer registrations so they can be removed on teardown. An actor can't
+/// reach its own isolated state from `deinit`, so they live here instead.
 private final class ObserverRegistry: @unchecked Sendable {
     private let lock = NSLock()
     private var handles: [(DatabaseReference, DatabaseHandle)] = []

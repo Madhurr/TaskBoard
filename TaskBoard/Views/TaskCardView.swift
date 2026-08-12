@@ -38,17 +38,13 @@ struct TaskCardView: View {
         .padding(.trailing, 13)
         .padding(.leading, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        // The column's hue, carried onto the card, so a card in mid-drag stays
-        // visually attached to where it came from.
         .cardSurface(accent: task.status.accent)
         .contentShape(.rect(cornerRadius: Theme.Radius.card))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
     }
 
-    /// "Saving…" replaces the timestamp while a write is outstanding: the moment the
-    /// user most wants to know the state of a task is the moment it is in flight,
-    /// and that is exactly when "updated 0m ago" says nothing useful.
+    /// While a write is outstanding, its state is more useful than "updated 0m ago".
     private var stamp: String {
         switch syncState {
         case .pending: "Saving…"
@@ -65,11 +61,7 @@ struct TaskCardView: View {
     }
 }
 
-/// The per-card sync mark.
-///
-/// A synced task shows nothing at all — the absence of a badge is the signal, which
-/// keeps a board full of unsynced work reading as a board rather than as a wall of
-/// warnings.
+/// Per-card sync mark. A synced task shows nothing — absence is the signal.
 struct SyncBadge: View {
     let state: SyncState
     @State private var isPulsing = false
@@ -99,8 +91,7 @@ struct SyncBadge: View {
                     }
 
             case .queuedOffline:
-                // Secondary grey, not a warning colour: being offline is an
-                // expected mode of this app, not a fault to alarm anyone about.
+                // Grey, not a warning colour — offline is an expected mode.
                 Image(systemName: "icloud.slash")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)

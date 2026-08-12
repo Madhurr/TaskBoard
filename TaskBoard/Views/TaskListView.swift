@@ -1,10 +1,7 @@
 import SwiftUI
 
-/// List mode: the same data under a different geometry.
-///
-/// It exists because a three-column board on a 390pt screen is a poor way to read
-/// twenty tasks in a row. Reordering within a section is a long-press drag; moving
-/// between sections is done from the editor, which keeps the gesture unambiguous.
+/// List mode: the same data, one vertical scroll. Reorder within a section by
+/// long-press drag; moving between sections goes through the editor.
 struct TaskListView: View {
     let columns: [(status: TaskStatus, tasks: [BoardTask])]
     let syncState: (BoardTask) -> SyncState
@@ -40,7 +37,6 @@ struct TaskListView: View {
                 }
             }
 
-            // Keeps the last row clear of the floating button.
             Color.clear
                 .frame(height: 72)
                 .listRowBackground(Color.clear)
@@ -73,8 +69,8 @@ struct TaskListView: View {
         .textCase(nil)
     }
 
-    /// Translates SwiftUI's pre-move offsets into a destination index that excludes
-    /// the task being moved, which is the contract `BoardLogic.move` expects.
+    /// Converts SwiftUI's pre-move offsets into an index that excludes the moved
+    /// task, which is what `BoardLogic.move` expects.
     private func move(in column: (status: TaskStatus, tasks: [BoardTask]), from offsets: IndexSet, to destination: Int) {
         guard let source = offsets.first, source < column.tasks.count else { return }
         let task = column.tasks[source]

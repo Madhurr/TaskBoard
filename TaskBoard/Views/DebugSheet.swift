@@ -1,15 +1,11 @@
 import SwiftUI
 
 #if DEBUG
-/// Simulates network and sync conditions without leaving the app.
+/// Simulates network and sync conditions. Drives the same in-memory repository
+/// the tests use.
 ///
-/// These are the same knobs the test suite drives, exposed through the same
-/// in-memory repository — so the offline and failure paths can be reproduced by
-/// hand, and what you see matches what the tests assert.
-///
-/// When the app is running against Firebase there is nothing honest to fake from
-/// the outside — the SDK owns its own queue — so the sheet offers to relaunch onto
-/// the simulated backend instead of pretending the controls apply.
+/// On Firebase there is nothing to fake from outside — the SDK owns its queue — so
+/// the sheet offers to relaunch onto the simulated backend instead.
 struct DebugSheet: View {
     let repository: InMemoryTaskRepository?
 

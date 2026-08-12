@@ -1,22 +1,17 @@
 import Foundation
 
-/// A single task on the board.
-///
-/// The identifier is generated on-device so that a task created while offline is
-/// complete and addressable immediately — no server round-trip is needed to learn
-/// its key, which is what lets edits and moves stack up on a task that the backend
-/// has never seen.
+/// A single task on the board. Ids are generated on-device so a task created
+/// offline is usable before the server has ever seen it.
 struct BoardTask: Identifiable, Codable, Equatable, Sendable {
     let id: String
     var title: String
     var details: String
     var status: TaskStatus
-    /// Fractional index. Ordering within a column is ascending by `position`.
+    /// Fractional index; columns sort ascending by this.
     var position: Double
     var createdAt: Date
     var updatedAt: Date
-    /// Soft delete. Hard deletes race badly with offline replay — a queued update
-    /// can resurrect a removed node — and a tombstone is what makes undo cheap.
+    /// Soft delete, so offline replay can't resurrect a removed task.
     var isDeleted: Bool
 
     init(
@@ -49,14 +44,10 @@ extension BoardTask {
         !details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// A stable, content-derived ordering key used only to break a conflict where
-    /// two versions of this task carry the same `updatedAt`.
+    /// Tiebreak for two versions of this task with the same `updatedAt`.
     ///
-    /// Every field that can still differ at that point is included, so equal keys
-    /// mean equal tasks and the comparison is a true total order. Doubles go in as
-    /// bit patterns rather than formatted text to keep the encoding exact, and
-    /// `hashValue` is avoided deliberately — Swift seeds it per process, so two
-    /// devices would disagree about the winner.
+    /// Covers every field that can still differ, so equal keys mean equal tasks.
+    /// Not `hashValue`: that is seeded per process and would differ across devices.
     var conflictTiebreakKey: String {
         [
             title,

@@ -1,22 +1,17 @@
 import Foundation
 
-/// In-memory `TaskRepository` used by tests, SwiftUI previews, and the in-app
-/// debug mode.
-///
-/// It models the parts of the real backend that matter for behaviour — a durable
-/// queue that holds writes while offline and replays them on reconnect — so the
-/// offline story can be exercised deterministically, without a network, a
-/// simulator toggle, or a Firebase project.
+/// In-memory `TaskRepository` for tests, previews, and the developer sheet.
+/// Models a durable offline queue that replays on reconnect.
 actor InMemoryTaskRepository: TaskRepository {
 
-    /// Knobs for simulating a hostile network.
+    /// Simulated network conditions.
     struct Conditions: Sendable, Equatable {
         var isOnline: Bool = true
-        /// Artificial round-trip delay applied before a write is acknowledged.
+        /// Delay before a write is acknowledged.
         var latency: Duration = .zero
-        /// Fraction of writes the server rejects outright, 0...1.
+        /// Fraction of writes rejected, 0...1.
         var failureRate: Double = 0
-        /// When set, `start()` fails with this error.
+        /// When set, `start()` reports this error.
         var loadError: RepositoryError?
 
         static let perfect = Conditions()
@@ -29,13 +24,12 @@ actor InMemoryTaskRepository: TaskRepository {
     private var lastError: SyncIssue?
     private var hasStarted = false
 
-    /// Writes accepted locally but not yet acknowledged, awaiting reconnection.
+    /// Accepted locally, waiting on reconnection.
     private var queue: [BoardTask] = []
 
     private var continuations: [UUID: AsyncStream<RepositorySnapshot>.Continuation] = [:]
 
-    /// Deterministic pseudo-random source, so an injected failure rate produces the
-    /// same sequence in every test run.
+    /// Seeded so failure injection repeats across runs.
     private var randomSeed: UInt64
 
     init(tasks: [BoardTask] = [], conditions: Conditions = .perfect, seed: UInt64 = 0x2545F491_4F6CDD1D) {
@@ -69,8 +63,7 @@ actor InMemoryTaskRepository: TaskRepository {
     func save(_ incoming: [BoardTask]) async throws {
         guard !incoming.isEmpty else { return }
 
-        // Applied locally first and unconditionally — this is what makes the app
-        // usable offline, and it must not depend on the outcome of the write.
+        // Applied locally first, regardless of the write's outcome.
         for task in incoming {
             tasks[task.id] = task
             pendingIDs.insert(task.id)
@@ -105,7 +98,6 @@ actor InMemoryTaskRepository: TaskRepository {
 
     var currentConditions: Conditions { conditions }
 
-    /// Test seam: the tasks currently held, in board order.
     var storedTasks: [BoardTask] {
         tasks.values.sorted(by: BoardLogic.isOrderedBefore)
     }
@@ -120,15 +112,14 @@ actor InMemoryTaskRepository: TaskRepository {
         }
 
         if conditions.failureRate > 0, nextRandom() < conditions.failureRate {
-            // The local copy is kept: the user's work survives a failed write, and
-            // the task stays marked pending so the failure is visible rather than
-            // silently dropped.
+            // Keep the local copy and stay pending, so the failure is visible.
             let error = RepositoryError.writeFailed("The server rejected the request.")
             lastError = .write(error.errorDescription ?? "The write was rejected.")
             emit()
             throw error
         }
 
+        // Re-check: the task may have been edited again while this was in flight.
         for task in written where tasks[task.id]?.updatedAt == task.updatedAt {
             pendingIDs.remove(task.id)
         }
@@ -166,7 +157,7 @@ actor InMemoryTaskRepository: TaskRepository {
         }
     }
 
-    /// xorshift64*, so failure injection is reproducible across runs.
+    /// xorshift64*
     private func nextRandom() -> Double {
         randomSeed ^= randomSeed >> 12
         randomSeed ^= randomSeed << 25

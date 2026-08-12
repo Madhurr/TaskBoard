@@ -1,15 +1,11 @@
 import Foundation
 
-/// Wire format for Realtime Database.
-///
-/// Hand-rolled rather than `Codable`: RTDB hands back `[String: Any]` full of
-/// `NSNumber`s, and the decoding has to be total — one malformed record written by
-/// an older build, or by a hand edit in the Firebase console, must not take the
-/// whole board down with it.
+/// Wire format for Realtime Database. Hand-rolled rather than `Codable` because
+/// RTDB returns `[String: Any]` of `NSNumber`s, and one malformed record must not
+/// take the whole board down.
 extension BoardTask {
 
-    /// Keys are the wire contract. Renaming one is a migration, not a refactor —
-    /// `updatedAt` in particular is also referenced by `database.rules.json`.
+    /// Wire contract. `updatedAt` is also referenced by `database.rules.json`.
     enum Key {
         static let id = "id"
         static let title = "title"
@@ -28,18 +24,15 @@ extension BoardTask {
             Key.details: details,
             Key.status: status.rawValue,
             Key.position: position,
-            // Milliseconds since epoch: the unit Realtime Database uses for
-            // `ServerValue.timestamp()`, so client and server stamps stay comparable
-            // and the security rule can order them.
+            // Milliseconds, matching `ServerValue.timestamp()` so the rules can
+            // compare client and server stamps.
             Key.createdAt: createdAt.millisecondsSince1970,
             Key.updatedAt: updatedAt.millisecondsSince1970,
             Key.isDeleted: isDeleted,
         ]
     }
 
-    /// Returns `nil` for a record that cannot be trusted. Callers skip those rather
-    /// than substituting defaults, so a corrupt row is invisible instead of
-    /// silently wrong.
+    /// Returns `nil` for an untrustworthy record — better invisible than wrong.
     init?(remoteValue: Any, fallbackID: String) {
         guard let dict = remoteValue as? [String: Any] else { return nil }
 
@@ -48,7 +41,7 @@ extension BoardTask {
 
         guard let title = dict[Key.title] as? String else { return nil }
 
-        // Anything unrecognised lands in To Do rather than vanishing from the board.
+        // Unknown status lands in To Do rather than vanishing.
         let status = (dict[Key.status] as? String).flatMap(TaskStatus.init(rawValue:)) ?? .todo
 
         let position = (dict[Key.position] as? NSNumber)?.doubleValue ?? 0
@@ -67,7 +60,7 @@ extension BoardTask {
         )
     }
 
-    /// Decodes the whole `tasks` node, dropping records that fail to parse.
+    /// Decodes the `tasks` node, dropping records that fail to parse.
     static func decodeAll(from value: Any?) -> [BoardTask] {
         guard let node = value as? [String: Any] else { return [] }
         return node.compactMap { key, value in

@@ -1,26 +1,21 @@
 import Foundation
 import Observation
 
-/// Drives the board. Owns presentation state; delegates every rule to `BoardLogic`
-/// and every write to a `TaskRepository`.
-///
-/// The clock is injected rather than read from `Date()` so that ordering, undo, and
-/// conflict behaviour are all reproducible under test.
+/// Drives the board. Owns presentation state; delegates rules to `BoardLogic` and
+/// writes to a `TaskRepository`. The clock is injected so tests are deterministic.
 @MainActor
 @Observable
 final class BoardViewModel {
 
-    /// What the board should be showing right now.
     enum Phase: Equatable {
-        /// Nothing has arrived yet — not even the local cache.
         case loading
         case ready
-        /// The initial load failed and there is no cached data to fall back on.
+        /// Load failed with no cached data to fall back on.
         case failed(String)
     }
 
-    /// A single reversible step. Holding the *previous* versions of the affected
-    /// tasks makes one mechanism cover deletes, edits, and moves alike.
+    /// One reversible step. Holding the previous versions covers deletes, edits,
+    /// and moves with the same mechanism.
     struct UndoStep: Equatable {
         let label: String
         let previous: [BoardTask]
@@ -31,8 +26,7 @@ final class BoardViewModel {
     private(set) var snapshot: RepositorySnapshot = .empty
     private(set) var phase: Phase = .loading
     private(set) var undoStep: UndoStep?
-    /// Set when a write fails. The user's edit is still on screen and still saved
-    /// locally — this only reports that the server has not taken it yet.
+    /// A write failed. The edit is still on screen and still saved locally.
     private(set) var writeError: String?
 
     var searchQuery: String = ""
@@ -42,9 +36,6 @@ final class BoardViewModel {
 
     private let repository: any TaskRepository
     private let now: @Sendable () -> Date
-    /// Holds the observation task. A plain stored property would not do: a
-    /// `@MainActor` type cannot touch its own isolated state from `deinit`, so the
-    /// cancellation lives in a box that tears itself down instead.
     private let observation = ObservationTaskBox()
 
     init(repository: any TaskRepository, now: @escaping @Sendable () -> Date = { Date() }) {
@@ -54,8 +45,7 @@ final class BoardViewModel {
 
     // MARK: - Lifecycle
 
-    /// Begins observing. Idempotent — calling it again while already running does
-    /// nothing, so it is safe to drive from `onAppear`.
+    /// Begins observing. Idempotent.
     func start() {
         guard !observation.isActive else { return }
         let stream = repository.snapshots()
@@ -75,18 +65,10 @@ final class BoardViewModel {
         observation.cancel()
     }
 
-    /// Local writes the repository has not echoed back yet.
-    ///
-    /// Snapshots arrive asynchronously, so between issuing a write and seeing it
-    /// return there is a window where the stream still describes the old world. Two
-    /// things go wrong without an overlay: a snapshot emitted just before the write
-    /// lands flickers the previous value back onto the screen, and — worse — the
-    /// next edit computes its position from stale data, which is how three quick
-    /// taps on "add" ended up in arbitrary order.
-    ///
-    /// Timestamps cannot arbitrate this. Two edits within the same clock tick carry
-    /// the same `updatedAt`, so last-write-wins has nothing to compare. Tracking
-    /// which writes are still in flight does not need to guess.
+    /// Writes the repository hasn't echoed back yet. Snapshots arrive
+    /// asynchronously, so without this the next edit would compute its position
+    /// from stale data. Timestamps can't arbitrate — edits in the same tick share
+    /// an `updatedAt`.
     private var localOverlay: [BoardTask.ID: BoardTask] = [:]
 
     private func apply(_ incoming: RepositorySnapshot) {
@@ -94,8 +76,7 @@ final class BoardViewModel {
 
         for (id, pending) in localOverlay {
             if byID[id] == pending {
-                // The repository has caught up; stop shadowing this task so genuine
-                // remote changes can flow through again.
+                // Caught up; stop shadowing so remote changes flow through again.
                 localOverlay[id] = nil
             } else {
                 byID[id] = pending
@@ -108,10 +89,8 @@ final class BoardViewModel {
             pendingIDs: incoming.pendingIDs.union(localOverlay.keys)
         )
 
-        // Only a *load* failure takes over the screen, and only when there is
-        // genuinely nothing to show. A rejected write leaves the board intact, so
-        // reporting it as "couldn't load your board" would be both alarming and
-        // false; it belongs in the header instead.
+        // Only a load failure with nothing to show takes over the screen; a
+        // rejected write leaves the board intact and belongs in the header.
         phase = if let issue = incoming.sync.lastError, issue.kind == .load, snapshot.tasks.isEmpty {
             .failed(issue.message)
         } else {
@@ -121,9 +100,7 @@ final class BoardViewModel {
         writeError = incoming.sync.lastError.map(\.message) ?? writeError
     }
 
-    /// Shows a write on screen the instant it is issued, before it has been
-    /// persisted or acknowledged. The local copy simply wins — it is the user's
-    /// most recent intent, and nothing else in the system knows better yet.
+    /// Shows a write immediately, before it is persisted or acknowledged.
     private func applyOptimistically(_ tasks: [BoardTask]) {
         var byID = Dictionary(snapshot.tasks.map { ($0.id, $0) }, uniquingKeysWith: BoardLogic.resolve)
         for task in tasks {
@@ -140,7 +117,7 @@ final class BoardViewModel {
 
     // MARK: - Derived view state
 
-    /// Columns after search and status filtering, in display order.
+    /// Columns after search and status filtering.
     var columns: [(status: TaskStatus, tasks: [BoardTask])] {
         let visible = BoardLogic.filter(snapshot.tasks, query: searchQuery, statuses: statusFilter)
         return BoardLogic.columns(in: visible)
@@ -150,7 +127,7 @@ final class BoardViewModel {
         !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !statusFilter.isEmpty
     }
 
-    /// True only when the board is genuinely empty, not when a filter hid everything.
+    /// Genuinely empty, as opposed to a filter hiding everything.
     var isBoardEmpty: Bool {
         snapshot.tasks.allSatisfy(\.isDeleted)
     }
@@ -210,8 +187,7 @@ final class BoardViewModel {
         await write([tombstone], undoLabel: "Task restored", previous: [existing])
     }
 
-    /// Moves a task into `status` at `targetIndex`, where the index counts slots in
-    /// the destination column with the moved task already excluded.
+    /// `targetIndex` counts slots in the destination column, excluding the moved task.
     func move(_ id: BoardTask.ID, to status: TaskStatus, targetIndex: Int) async {
         guard let existing = task(id),
               let moved = BoardLogic.move(
@@ -226,9 +202,7 @@ final class BoardViewModel {
         var writes = [moved]
         var previous = [existing]
 
-        // Subdividing the same gap repeatedly eventually exhausts Double's
-        // precision. Renumber the column in the same atomic write so the board is
-        // never observed mid-rebalance.
+        // Renumber in the same atomic write, so the board is never seen mid-rebalance.
         var projected = snapshot.tasks.filter { $0.id != id }
         projected.append(moved)
         let destination = BoardLogic.column(status, in: projected)
@@ -244,7 +218,6 @@ final class BoardViewModel {
                 writes.append(task)
                 if let original = self.task(task.id) { previous.append(original) }
             }
-            // The moved task may itself have been renumbered.
             if let corrected = renumbered.first(where: { $0.id == id }) {
                 writes[0] = corrected
             }
@@ -257,8 +230,7 @@ final class BoardViewModel {
         guard let step = undoStep else { return }
         undoStep = nil
 
-        // Restored with a fresh timestamp so the revert wins last-write-wins
-        // against the change it is undoing, including on other devices.
+        // Fresh timestamp so the revert wins last-write-wins against what it undoes.
         let timestamp = now()
         let restored = step.previous.map { task -> BoardTask in
             var copy = task
@@ -293,12 +265,8 @@ final class BoardViewModel {
 
     // MARK: - Write path
 
-    /// Single funnel for every mutation: publish the undo step, persist, and turn a
-    /// failure into a message without ever rolling the user's change back.
-    ///
-    /// Rolling back on failure would be the wrong call here. The write is already
-    /// durable locally and Firebase will retry it; discarding it on screen would
-    /// throw away work the app has, in fact, kept.
+    /// Single funnel for every mutation. Never rolls the change back on failure:
+    /// it is already durable locally and will be retried.
     private func write(_ tasks: [BoardTask], undoLabel: String?, previous: [BoardTask] = []) async {
         guard !tasks.isEmpty else { return }
 

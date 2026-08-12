@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - Helpers
 
-/// A controllable clock, so timestamps in assertions are exact rather than "now-ish".
+/// Controllable clock, so timestamp assertions are exact.
 private final class TestClock: @unchecked Sendable {
     private let lock = NSLock()
     private var current: Date
@@ -34,8 +34,8 @@ private final class TestClock: @unchecked Sendable {
     }
 }
 
-/// Waits for the view model to observe a repository snapshot. Mutations travel
-/// back through an `AsyncStream`, so state lands a turn after the call returns.
+/// Waits for the view model to observe a snapshot. Mutations travel back through
+/// an `AsyncStream`, so state lands a turn after the call returns.
 @MainActor
 private func waitUntil(
     _ description: Comment,
@@ -286,7 +286,7 @@ struct BoardMoveTests {
 
     @Test("A column whose positions are exhausted is renumbered on the next move")
     func rebalances() async throws {
-        // Two tasks packed closer than the minimum gap force a rebalance.
+        // Packed closer than the minimum gap, forcing a rebalance.
         let base = Date(timeIntervalSince1970: 1_700_000_000)
         let packed = [
             BoardTask(id: "a", title: "A", status: .todo, position: 0, createdAt: base, updatedAt: base),
@@ -384,7 +384,7 @@ struct FailureTests {
         await board.createTask(title: "Precious")
         await waitUntil("error surfaced") { board.writeError != nil }
 
-        // The point of the whole exercise: a failed sync must not discard the edit.
+        // A failed sync must not discard the edit.
         #expect(board.columns[0].tasks.count == 1)
         #expect(board.columns[0].tasks[0].title == "Precious")
         #expect(await repository.storedTasks.count == 1)
@@ -392,16 +392,14 @@ struct FailureTests {
     }
 
     /// Regression: load and write failures shared one untyped string, so a rejected
-    /// write was rendered under the "Couldn't load your board" takeover — telling
-    /// the user the board had failed to load while it sat on screen behind the message.
+    /// write rendered under the "Couldn't load your board" takeover.
     @Test("A rejected write is reported in the header, not as a failed board")
     func writeFailureDoesNotTakeOverTheScreen() async throws {
         let (board, _, _) = makeBoard(conditions: .init(isOnline: true, failureRate: 1.0))
         await waitUntil("ready") { board.phase == .ready }
 
         await board.createTask(title: "Precious")
-        // The thrown error reaches `writeError` first; wait for the snapshot that
-        // carries the typed issue, which is what drives the phase decision.
+        // `writeError` is set by the throw first; wait for the typed issue.
         await waitUntil("error surfaced") { board.snapshot.sync.lastError != nil }
 
         #expect(board.phase == .ready, "the board still has content and must stay visible")

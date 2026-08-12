@@ -177,8 +177,8 @@ struct BoardScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .failed(let message):
-            // Reached only when the local cache is genuinely empty. With any cached
-            // data at all the board renders and the failure degrades to the pill.
+            // Only when the cache is empty; otherwise the board renders and the
+            // failure degrades to the pill.
             BoardEmptyState(
                 symbol: "exclamationmark.triangle",
                 tint: Theme.danger,
@@ -250,8 +250,7 @@ struct BoardScreen: View {
             }
 
         case .edit(let task):
-            // Re-read from the view model so the sheet reflects any change that
-            // arrived while it was open, rather than the snapshot it was built with.
+            // Re-read so the sheet reflects changes that arrived while it was open.
             let current = board.task(task.id) ?? task
             TaskEditorSheet(
                 mode: .edit(current),
@@ -269,7 +268,6 @@ struct BoardScreen: View {
         }
     }
 
-    /// Undo is a short-lived offer, not a permanent piece of chrome.
     private func scheduleUndoDismissal(for step: BoardViewModel.UndoStep?) {
         undoDismissTask?.cancel()
         guard step != nil else { return }

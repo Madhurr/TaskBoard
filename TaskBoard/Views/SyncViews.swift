@@ -1,9 +1,6 @@
 import SwiftUI
 
-/// The one-line sync summary under the title.
-///
-/// Counts are always concrete — a number, never "some" — because the only useful
-/// version of this message is one the user can act on.
+/// One-line sync summary under the title.
 struct SyncPill: View {
     let snapshot: RepositorySnapshot
     let onRetry: () -> Void
@@ -61,10 +58,8 @@ struct SyncPill: View {
     }
 }
 
-/// Undo affordance for deletes, edits, and moves alike.
-///
-/// One toast covers all three because each is the same thing underneath — a set of
-/// previous task versions to write back.
+/// Undo for deletes, edits, and moves — each is a set of previous versions to
+/// write back.
 struct UndoToast: View {
     let step: BoardViewModel.UndoStep
     let onUndo: () -> Void
@@ -110,7 +105,7 @@ struct UndoToast: View {
     }
 }
 
-/// Full-screen message for the states where the board has nothing to show.
+/// Full-screen message for states where the board has nothing to show.
 struct BoardEmptyState: View {
     let symbol: String
     let tint: Color

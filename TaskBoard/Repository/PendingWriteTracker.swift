@@ -1,26 +1,18 @@
 import Foundation
 
-/// Mirrors Firebase's write queue for display purposes.
+/// Tracks which task ids have a write in flight, so the UI can show per-task sync
+/// state. Display only — Firebase owns the actual queue and retries.
 ///
-/// Realtime Database queues offline writes durably and replays them on reconnect,
-/// but it exposes no per-record view of what is still outstanding — and the
-/// assignment requires the user to be able to tell whether a change has synced.
-/// This tracks which task ids have a write in flight. It never gates, retries, or
-/// reorders anything; Firebase remains the only thing that actually delivers.
-///
-/// One honest limitation, documented in the README: Firebase fires a write's
-/// completion handler only once the server acknowledges it, and those handlers do
-/// not survive process death. A change made offline and then relaunched into is
-/// still replayed by Firebase, but its acknowledgement never reaches us. The set is
-/// therefore persisted and cleared on the first server round-trip after reconnect,
-/// which is a heuristic — it can briefly over-report, and never under-reports.
+/// Firebase's completion handlers don't survive process death, so the set is
+/// persisted and cleared on the first round-trip after reconnect. That heuristic
+/// can over-report briefly; it never under-reports.
 actor PendingWriteTracker {
 
     private let defaultsKey = "pendingWriteIDs"
     private let defaults: UserDefaults
 
     private var ids: Set<BoardTask.ID>
-    /// Ids restored from a previous launch, whose completion handlers are gone.
+    /// Restored from a previous launch; their completion handlers are gone.
     private var restored: Set<BoardTask.ID>
 
     private var onChange: (@Sendable (Set<BoardTask.ID>) -> Void)?
@@ -52,12 +44,8 @@ actor PendingWriteTracker {
         persist()
     }
 
-    /// Clears markers left over from a previous launch.
-    ///
-    /// Called once the app has been connected and has seen a server round-trip, by
-    /// which point Firebase has replayed whatever it had queued. Writes issued in
-    /// *this* session are untouched — those still have live completion handlers and
-    /// will clear themselves properly.
+    /// Drops markers from a previous launch, once a round-trip proves Firebase has
+    /// replayed its queue. Writes from this session are untouched.
     func clearRestored() {
         guard !restored.isEmpty else { return }
         ids.subtract(restored)
