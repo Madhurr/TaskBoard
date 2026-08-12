@@ -1,0 +1,66 @@
+name: TaskBoard
+options:
+  bundleIdPrefix: com.madhurjain
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "12.17.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+
+targets:
+  TaskBoard:
+    type: application
+    platform: iOS
+    sources:
+      - path: TaskBoard
+      - path: GoogleService-Info.plist
+        buildPhase: resources
+    dependencies:
+      - package: Firebase
+        product: FirebaseDatabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.madhurjain.taskboard
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_CFBundleDisplayName: Task Board
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+  TaskBoardTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: TaskBoardTests
+    dependencies:
+      - target: TaskBoard
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  TaskBoard:
+    build:
+      targets:
+        TaskBoard: all
+        TaskBoardTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - TaskBoardTests
