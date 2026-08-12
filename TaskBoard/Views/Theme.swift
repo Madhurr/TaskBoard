@@ -75,16 +75,35 @@ private extension UIColor {
 
 extension View {
     /// The standard raised surface used by cards and sheets.
-    func cardSurface(cornerRadius: CGFloat = Theme.Radius.card, elevated: Bool = false) -> some View {
-        background(Theme.surface, in: .rect(cornerRadius: cornerRadius))
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .strokeBorder(Theme.hairline, lineWidth: 1)
+    ///
+    /// An `accent` draws the leading status stripe. It is composed *inside* the
+    /// clipped surface rather than layered behind the card: a square-cornered
+    /// rectangle sitting behind a rounded rectangle overhangs wherever the corner
+    /// curves away, which reads as the colour leaking out of the card.
+    func cardSurface(
+        cornerRadius: CGFloat = Theme.Radius.card,
+        accent: Color? = nil,
+        elevated: Bool = false
+    ) -> some View {
+        background {
+            ZStack(alignment: .leading) {
+                Theme.surface
+                if let accent {
+                    Rectangle()
+                        .fill(accent)
+                        .frame(width: 3)
+                }
             }
-            .shadow(
-                color: .black.opacity(elevated ? 0.22 : 0.06),
-                radius: elevated ? 18 : 6,
-                y: elevated ? 10 : 2
-            )
+            .clipShape(.rect(cornerRadius: cornerRadius))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        }
+        .shadow(
+            color: .black.opacity(elevated ? 0.22 : 0.06),
+            radius: elevated ? 18 : 6,
+            y: elevated ? 10 : 2
+        )
     }
 }

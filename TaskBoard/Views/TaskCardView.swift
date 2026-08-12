@@ -38,14 +38,9 @@ struct TaskCardView: View {
         .padding(.trailing, 13)
         .padding(.leading, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(alignment: .leading) {
-            // The column's hue, carried onto the card, so a card in mid-drag stays
-            // visually attached to where it came from.
-            Rectangle()
-                .fill(task.status.accent)
-                .frame(width: 3)
-        }
-        .cardSurface()
+        // The column's hue, carried onto the card, so a card in mid-drag stays
+        // visually attached to where it came from.
+        .cardSurface(accent: task.status.accent)
         .contentShape(.rect(cornerRadius: Theme.Radius.card))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
