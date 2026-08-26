@@ -1,5 +1,5 @@
 ---
-tags: [taskboard, kb, concurrency]
+tags: [taskboard, kb, concurrency, architecture]
 ---
 
 # 05 Concurrency Rules

@@ -1,5 +1,5 @@
 ---
-tags: [taskboard, kb, build]
+tags: [taskboard, kb, build, howto]
 ---
 
 # 08 Build & Run

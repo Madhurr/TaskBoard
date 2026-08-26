@@ -1,0 +1,26 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    { "query": "tag:#critical", "color": { "a": 1, "rgb": 14701340 } },
+    { "query": "tag:#architecture", "color": { "a": 1, "rgb": 5741175 } },
+    { "query": "tag:#howto", "color": { "a": 1, "rgb": 3055471 } },
+    { "query": "tag:#moc", "color": { "a": 1, "rgb": 16217402 } }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.4,
+  "lineSizeMultiplier": 1.2,
+  "collapse-forces": false,
+  "centerStrength": 0.52,
+  "repelStrength": 11,
+  "linkStrength": 1,
+  "linkDistance": 190,
+  "scale": 1
+}

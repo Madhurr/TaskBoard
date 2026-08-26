@@ -1,5 +1,5 @@
 ---
-tags: [taskboard, kb, gotchas]
+tags: [taskboard, kb, gotchas, critical]
 ---
 
 # 07 Gotchas

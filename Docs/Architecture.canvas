@@ -1,0 +1,203 @@
+{
+  "nodes": [
+    {
+      "id": "title",
+      "type": "text",
+      "text": "# TaskBoard \u2014 Architecture\n\nUnidirectional: **intents down, snapshots up**.\nA view never mutates a task.",
+      "x": -700,
+      "y": -420,
+      "width": 420,
+      "height": 150,
+      "color": "6"
+    },
+    {
+      "id": "views",
+      "type": "text",
+      "text": "## Views\n`BoardScreen` \u00b7 `BoardColumnsView`\n`TaskCardView` \u00b7 `TaskListView`\n`TaskEditorSheet`\n\n**SwiftUI. Presentation only.**",
+      "x": -180,
+      "y": -420,
+      "width": 340,
+      "height": 190,
+      "color": "5"
+    },
+    {
+      "id": "vm",
+      "type": "text",
+      "text": "## ViewModel\n`BoardViewModel`\n`@Observable @MainActor`\n\nOrchestrates \u2014 **does not decide**.\nOptimistic overlay \u00b7 undo \u00b7 single `write()` funnel",
+      "x": -180,
+      "y": -150,
+      "width": 340,
+      "height": 200,
+      "color": "4"
+    },
+    {
+      "id": "logic",
+      "type": "text",
+      "text": "## Logic \u2014 the functional core\n`BoardLogic`\n\n**PURE.** No Firebase, no SwiftUI, no clock.\nordering \u00b7 grouping \u00b7 filtering \u00b7 conflict resolution\n\n\u2192 62 tests, ~0.15s, no simulator",
+      "x": -180,
+      "y": 120,
+      "width": 340,
+      "height": 220,
+      "color": "3"
+    },
+    {
+      "id": "repo",
+      "type": "text",
+      "text": "## Repository\n`TaskRepository` (protocol)\n\n`snapshots()` \u00b7 `start()`\n`save(_:)` \u00b7 `clearError()`",
+      "x": -180,
+      "y": 400,
+      "width": 340,
+      "height": 170,
+      "color": "2"
+    },
+    {
+      "id": "fb",
+      "type": "text",
+      "text": "### FirebaseTaskRepository\n`actor`\n\nRTDB + its **local cache as the store**.\nPersistence on \u2192 writes queue durably\nacross process death.",
+      "x": 260,
+      "y": 340,
+      "width": 320,
+      "height": 190,
+      "color": "1"
+    },
+    {
+      "id": "mem",
+      "type": "text",
+      "text": "### InMemoryTaskRepository\n`actor`\n\nA **fake**, not a mock \u2014 really queues\nand replays. Latency, failure rate,\nforced offline.\n\nTests \u00b7 previews \u00b7 developer sheet",
+      "x": 260,
+      "y": 570,
+      "width": 320,
+      "height": 200,
+      "color": "4"
+    },
+    {
+      "id": "models",
+      "type": "text",
+      "text": "## Models\n`BoardTask` \u00b7 `TaskStatus`\n`SyncState` \u00b7 `SyncSummary` \u00b7 `SyncIssue`\n\nAll `Sendable` value types.",
+      "x": -700,
+      "y": 120,
+      "width": 340,
+      "height": 170,
+      "color": "5"
+    },
+    {
+      "id": "snapshot",
+      "type": "text",
+      "text": "### RepositorySnapshot\ntasks + sync + pendingIDs\n\n**One value**, so they cannot tear \u2014\nno card reading \"synced\" while the\ntoolbar still counts it pending.",
+      "x": -700,
+      "y": 400,
+      "width": 340,
+      "height": 190,
+      "color": "2"
+    },
+    {
+      "id": "rules",
+      "type": "text",
+      "text": "### database.rules.json\n\n```\nnewData.updatedAt >= data.updatedAt\n```\n\nConflict resolution **enforced server-side**.\nNot a transaction \u2014 RTDB transactions\nare not queued offline.",
+      "x": 640,
+      "y": 120,
+      "width": 360,
+      "height": 210,
+      "color": "1"
+    },
+    {
+      "id": "inv",
+      "type": "file",
+      "file": "02 Invariants.md",
+      "x": 640,
+      "y": -180,
+      "width": 360,
+      "height": 120,
+      "color": "1"
+    },
+    {
+      "id": "idx",
+      "type": "file",
+      "file": "00 Index.md",
+      "x": 640,
+      "y": -370,
+      "width": 360,
+      "height": 120,
+      "color": "6"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "views",
+      "fromSide": "bottom",
+      "toNode": "vm",
+      "toSide": "top",
+      "label": "intent"
+    },
+    {
+      "id": "e2",
+      "fromNode": "vm",
+      "fromSide": "bottom",
+      "toNode": "logic",
+      "toSide": "top",
+      "label": "pure decision"
+    },
+    {
+      "id": "e3",
+      "fromNode": "logic",
+      "fromSide": "bottom",
+      "toNode": "repo",
+      "toSide": "top",
+      "label": "updated tasks"
+    },
+    {
+      "id": "e4",
+      "fromNode": "repo",
+      "fromSide": "right",
+      "toNode": "fb",
+      "toSide": "left"
+    },
+    {
+      "id": "e5",
+      "fromNode": "repo",
+      "fromSide": "right",
+      "toNode": "mem",
+      "toSide": "left"
+    },
+    {
+      "id": "e6",
+      "fromNode": "repo",
+      "fromSide": "left",
+      "toNode": "snapshot",
+      "toSide": "right",
+      "label": "AsyncStream"
+    },
+    {
+      "id": "e7",
+      "fromNode": "snapshot",
+      "fromSide": "top",
+      "toNode": "models",
+      "toSide": "bottom"
+    },
+    {
+      "id": "e8",
+      "fromNode": "snapshot",
+      "fromSide": "top",
+      "toNode": "vm",
+      "toSide": "left",
+      "label": "snapshots up"
+    },
+    {
+      "id": "e9",
+      "fromNode": "fb",
+      "fromSide": "right",
+      "toNode": "rules",
+      "toSide": "top",
+      "label": "writes checked by"
+    },
+    {
+      "id": "e10",
+      "fromNode": "vm",
+      "fromSide": "top",
+      "toNode": "views",
+      "toSide": "bottom",
+      "label": "re-render"
+    }
+  ]
+}

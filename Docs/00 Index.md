@@ -10,6 +10,11 @@ tags: [taskboard, kb, moc]
 > [!warning] Read this first
 > [[02 Invariants]] — the rules that break **silently** if violated. Everything else is recoverable; these are not.
 
+## Visual maps
+
+- [[Architecture.canvas|Architecture]] — the whole system on one canvas: layers, data flow, both repositories, where the security rules sit
+- [[Adding a Field.canvas|Adding a Field]] — the five-step sequence, with the silent-failure step marked
+
 ## Start here
 
 | Doc | Read when |

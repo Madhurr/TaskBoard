@@ -1,5 +1,5 @@
 ---
-tags: [taskboard, kb, testing]
+tags: [taskboard, kb, testing, howto]
 ---
 
 # 06 Testing Guide

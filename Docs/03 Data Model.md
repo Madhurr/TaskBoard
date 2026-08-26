@@ -1,5 +1,5 @@
 ---
-tags: [taskboard, kb, model]
+tags: [taskboard, kb, model, architecture]
 ---
 
 # 03 Data Model & Wire Format

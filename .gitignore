@@ -24,3 +24,7 @@ xcuserdata/
 
 # Personal Obsidian vault — study notes, not part of the submission
 Mine/
+
+# Obsidian workspace config (the notes and canvases themselves are tracked)
+Docs/.obsidian/workspace.json
+Docs/.obsidian/workspace-mobile.json
