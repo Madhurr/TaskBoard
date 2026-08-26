@@ -35,6 +35,14 @@ suite drives, so what you can reproduce by hand is exactly what the tests assert
 
 ---
 
+## Documentation
+
+[`Docs/`](Docs/) holds the engineering documentation — architecture, the invariants that
+must hold when extending, the wire format, extension recipes, concurrency rules, and a
+testing guide. Start at [`Docs/00 Index.md`](Docs/00%20Index.md).
+
+---
+
 ## How it is put together
 
 ```
