@@ -24,3 +24,7 @@ xcuserdata/
 
 # Personal Obsidian vault — study notes, not part of the submission
 Mine/
+
+# Engineering knowledge base + AI context — local working aids, not submission artifacts
+Docs/
+CLAUDE.md
