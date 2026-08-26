@@ -28,3 +28,6 @@ Mine/
 # Obsidian workspace config (the notes and canvases themselves are tracked)
 Docs/.obsidian/workspace.json
 Docs/.obsidian/workspace-mobile.json
+
+# Local agent tooling state
+.nexus/
